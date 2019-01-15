@@ -39,6 +39,16 @@ class dXdt(nn.Module):
         self.layer = nn.Linear(1,1,bias=False)
 
     def forward(self, t, x):
+
+        if not isinstance(t, torch.Tensor):
+            if not isinstance(t, np.ndarray):
+                t = np.array([t], dtype=np.float32)
+            t = torch.from_numpy(t)
+        else:
+            if len(t.size()) == 0:
+                t = torch.reshape(t, [1])
+
+        #print(f"t={t}, x={x}, type(t)={type(t)}, t.size()={t.size()}")
         y = self.layer(t)
         return y
 
@@ -55,7 +65,7 @@ def test_f():
         return t**2
 
     f0 = np.array([0.0], dtype=np.float32)
-    t = np.linspace(0, 1, 2, dtype=np.float32)
+    t = np.linspace(0, 1, 10, dtype=np.float32)
     t = np.expand_dims(t, axis=-1)
 
     f0 = torch.from_numpy(f0).to(device)
@@ -63,11 +73,11 @@ def test_f():
     ft_true = xt(t)
 
     func = dXdt()
-    func.layer.weight.data[0,0]=10.0
-    print(func.layer.weight.data)
+    #func.layer.weight.data[0,0]=2.0
+    #print(func.layer.weight.data)
     func.to(device)
 
-    optimizer = optim.SGD(func.parameters(), lr=1e-2)
+    optimizer = optim.SGD(func.parameters(), lr=1e-1)
     mse_loss = nn.MSELoss()
 
     time_meter = RunningAverageMeter(0.97)
@@ -85,8 +95,7 @@ def test_f():
 
         #print(func.layer.weight.item(), func.layer.weight.grad.item())
         #print('dir(func.layer.weight.grad)', func.layer.weight.grad)
-        #print('dir(func.layer.bias.grad)', func.layer.bias.grad)
-        
+        #print('dir(func.layer.bias.grad)', func.layer.bias.grad)        
         optimizer.step()
 
         time_meter.update(time.time() - end)
